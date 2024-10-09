@@ -17,9 +17,24 @@ workspace {
                 technology "React, JavaScript"
             }
 
-            api = container "API Gateway" {
+            apiGateway = container "API Gateway" {
                 description "Обеспечивает доступ к бизнес-логике"
                 technology "Node.js, Express"
+            }
+
+            userService = container "User Service" {
+                description "Сервис управления пользователями"
+                technology "Java Spring Boot"
+            }
+
+            routeService = container "Route Service" {
+                description "Сервис управления маршрутами"
+                technology "Java Spring Boot"
+            }
+
+            tripService = container "Trip Service" {
+                description "Сервис управления поездками"
+                technology "Java Spring Boot"
             }
 
             userDB = container "База данных пользователей" {
@@ -39,43 +54,55 @@ workspace {
 
             // Взаимодействие пользователя с системой
             user -> webApp "Использует для взаимодействия"
-            webApp -> api "Запросы к API"
-            api -> userDB "Чтение/Запись данных пользователей"
-            api -> routeDB "Чтение/Запись маршрутов"
-            api -> tripDB "Чтение/Запись поездок"
+            webApp -> apiGateway "Запросы к API"
+            apiGateway -> userService "Запросы на управление пользователями" "HTTPS"
+            apiGateway -> routeService "Запросы на управление маршрутами" "HTTPS"
+            apiGateway -> tripService "Запросы на управление поездками" "HTTPS"
+
+            userService -> userDB "Чтение/Запись данных пользователей" "JDBC"
+            routeService -> routeDB "Чтение/Запись маршрутов" "JDBC"
+            tripService -> tripDB "Чтение/Запись поездок" "JDBC"
 
             // Основные сценарии использования
             user -> webApp "Создание нового пользователя"
-            webApp -> api "POST /users"
-            api -> userDB "INSERT INTO users"
+            webApp -> apiGateway "POST /users"
+            apiGateway -> userService "POST /users"
+            userService -> userDB "INSERT INTO users"
 
             user -> webApp "Поиск пользователя по логину"
-            webApp -> api "GET /users?login={login}"
-            api -> userDB "SELECT * FROM users WHERE login={login}"
+            webApp -> apiGateway "GET /users?login={login}"
+            apiGateway -> userService "GET /users?login={login}"
+            userService -> userDB "SELECT * FROM users WHERE login={login}"
 
             user -> webApp "Поиск пользователя по маске имени и фамилии"
-            webApp -> api "GET /users?name={name}&surname={surname}"
-            api -> userDB "SELECT * FROM users WHERE name LIKE {name} AND surname LIKE {surname}"
+            webApp -> apiGateway "GET /users?name={name}&surname={surname}"
+            apiGateway -> userService "GET /users?name={name}&surname={surname}"
+            userService -> userDB "SELECT * FROM users WHERE name LIKE {name} AND surname LIKE {surname}"
 
             user -> webApp "Создание маршрута"
-            webApp -> api "POST /routes"
-            api -> routeDB "INSERT INTO routes"
+            webApp -> apiGateway "POST /routes"
+            apiGateway -> routeService "POST /routes"
+            routeService -> routeDB "INSERT INTO routes"
 
             user -> webApp "Получение маршрутов пользователя"
-            webApp -> api "GET /users/{userId}/routes"
-            api -> routeDB "SELECT * FROM routes WHERE userId={userId}"
+            webApp -> apiGateway "GET /users/{userId}/routes"
+            apiGateway -> routeService "GET /users/{userId}/routes"
+            routeService -> routeDB "SELECT * FROM routes WHERE userId={userId}"
 
             user -> webApp "Создание поездки"
-            webApp -> api "POST /trips"
-            api -> tripDB "INSERT INTO trips"
+            webApp -> apiGateway "POST /trips"
+            apiGateway -> tripService "POST /trips"
+            tripService -> tripDB "INSERT INTO trips"
 
             user -> webApp "Подключение пользователей к поездке"
-            webApp -> api "POST /trips/{tripId}/users"
-            api -> tripDB "UPDATE trips SET users = users + {userId} WHERE tripId={tripId}"
+            webApp -> apiGateway "POST /trips/{tripId}/users"
+            apiGateway -> tripService "POST /trips/{tripId}/users"
+            tripService -> tripDB "UPDATE trips SET users = users + {userId} WHERE tripId={tripId}"
 
             user -> webApp "Получение информации о поездке"
-            webApp -> api "GET /trips/{tripId}"
-            api -> tripDB "SELECT * FROM trips WHERE tripId={tripId}"
+            webApp -> apiGateway "GET /trips/{tripId}"
+            apiGateway -> tripService "GET /trips/{tripId}"
+            tripService -> tripDB "SELECT * FROM trips WHERE tripId={tripId}"
         }
     }
     
@@ -94,57 +121,65 @@ workspace {
 
         dynamic blablacar "createUser" "Создание нового пользователя" {
             user -> blablacar.webApp "Создаёт нового пользователя"
-            blablacar.webApp -> blablacar.api "POST /users"
-            blablacar.api -> blablacar.userDB "INSERT INTO users"
+            blablacar.webApp -> blablacar.apiGateway "POST /users"
+            blablacar.apiGateway -> blablacar.userService "POST /users"
+            blablacar.userService -> blablacar.userDB "INSERT INTO users"
             autolayout lr
         }
 
         dynamic blablacar "findUserByLogin" "Поиск пользователя по логину" {
             user -> blablacar.webApp "Ищет пользователя по логину"
-            blablacar.webApp -> blablacar.api "GET /users?login={login}"
-            blablacar.api -> blablacar.userDB "SELECT * FROM users WHERE login={login}"
+            blablacar.webApp -> blablacar.apiGateway "GET /users?login={login}"
+            blablacar.apiGateway -> blablacar.userService "GET /users?login={login}"
+            blablacar.userService -> blablacar.userDB "SELECT * FROM users WHERE login={login}"
             autolayout lr
         }
 
         dynamic blablacar "findUserByName" "Поиск пользователя по маске имени и фамилии" {
             user -> blablacar.webApp "Ищет пользователя по имени и фамилии"
-            blablacar.webApp -> blablacar.api "GET /users?name={name}&surname={surname}"
-            blablacar.api -> blablacar.userDB "SELECT * FROM users WHERE name LIKE {name} AND surname LIKE {surname}"
+            blablacar.webApp -> blablacar.apiGateway "GET /users?name={name}&surname={surname}"
+            blablacar.apiGateway -> blablacar.userService "GET /users?name={name}&surname={surname}"
+            blablacar.userService -> blablacar.userDB "SELECT * FROM users WHERE name LIKE {name} AND surname LIKE {surname}"
             autolayout lr
         }
 
         dynamic blablacar "createRoute" "Создание нового маршрута" {
             user -> blablacar.webApp "Создаёт новый маршрут"
-            blablacar.webApp -> blablacar.api "POST /routes"
-            blablacar.api -> blablacar.routeDB "INSERT INTO routes"
+            blablacar.webApp -> blablacar.apiGateway "POST /routes"
+            blablacar.apiGateway -> blablacar.routeService "POST /routes"
+            blablacar.routeService -> blablacar.routeDB "INSERT INTO routes"
             autolayout lr
         }
 
         dynamic blablacar "getRoutes" "Получение маршрутов пользователя" {
             user -> blablacar.webApp "Запрашивает маршруты"
-            blablacar.webApp -> blablacar.api "GET /users/{userId}/routes"
-            blablacar.api -> blablacar.routeDB "SELECT * FROM routes WHERE userId={userId}"
+            blablacar.webApp -> blablacar.apiGateway "GET /users/{userId}/routes"
+            blablacar.apiGateway -> blablacar.routeService "GET /users/{userId}/routes"
+            blablacar.routeService -> blablacar.routeDB "SELECT * FROM routes WHERE userId={userId}"
             autolayout lr
         }
 
         dynamic blablacar "createTrip" "Создание новой поездки" {
             user -> blablacar.webApp "Создаёт новую поездку"
-            blablacar.webApp -> blablacar.api "POST /trips"
-            blablacar.api -> blablacar.tripDB "INSERT INTO trips"
+            blablacar.webApp -> blablacar.apiGateway "POST /trips"
+            blablacar.apiGateway -> blablacar.tripService "POST /trips"
+            blablacar.tripService -> blablacar.tripDB "INSERT INTO trips"
             autolayout lr
         }
 
         dynamic blablacar "joinTrip" "Подключение пользователей к поездке" {
             user -> blablacar.webApp "Подключается к поездке"
-            blablacar.webApp -> blablacar.api "POST /trips/{tripId}/users"
-            blablacar.api -> blablacar.tripDB "UPDATE trips SET users = users + {userId} WHERE tripId={tripId}"
+            blablacar.webApp -> blablacar.apiGateway "POST /trips/{tripId}/users"
+            blablacar.apiGateway -> blablacar.tripService "POST /trips/{tripId}/users"
+            blablacar.tripService -> blablacar.tripDB "UPDATE trips SET users = users + {userId} WHERE tripId={tripId}"
             autolayout lr
         }
 
         dynamic blablacar "getTrip" "Получение информации о поездке" {
             user -> blablacar.webApp "Запрашивает информацию о поездке"
-            blablacar.webApp -> blablacar.api "GET /trips/{tripId}"
-            blablacar.api -> blablacar.tripDB "SELECT * FROM trips WHERE tripId={tripId}"
+            blablacar.webApp -> blablacar.apiGateway "GET /trips/{tripId}"
+            blablacar.apiGateway -> blablacar.tripService "GET /trips/{tripId}"
+            blablacar.tripService -> blablacar.tripDB "SELECT * FROM trips WHERE tripId={tripId}"
             autolayout lr
         }
 
